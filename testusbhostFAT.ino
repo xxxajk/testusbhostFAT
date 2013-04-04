@@ -79,16 +79,14 @@ static int my_putc(char c, FILE *t) {
 void setup() {
         // Set this to higher values to enable more debug information
         // minimum 0x00, maximum 0xff
-        UsbDEBUGlvl = 0x51;
+        UsbDEBUGlvl = 0x7f;
         // declare pin 9 to be an output:
         pinMode(led, OUTPUT);
         pinMode(2, OUTPUT);
         // Initialize 'debug' serial port
         Serial.begin(115200);
         fdevopen(&my_putc, 0);
-        // initialize both relay serial ports:
-        Serial1.begin(9600);
-        Serial2.begin(9600);
+
         // Blink pin 9:
         delay(500);
         analogWrite(led, 255);
@@ -102,13 +100,12 @@ void setup() {
         analogWrite(led, 255);
         delay(500);
         analogWrite(led, 0);
-        Notify(PSTR("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n"), 0x40);
+        printf("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n");
         printf("Current UsbDEBUGlvl %02x\r\n", UsbDEBUGlvl);
         printf("'+' and '-' increase/decrease by 0x01\r\n");
         printf("'.' and ',' increase/decrease by 0x10\r\n");
         printf("'t' will run a 10MB write/read test and print out the time it took.\r\n");
         printf("'e' will toggle vbus off for a few moments.\r\n");
-        analogWrite(led, 0);
         analogWrite(led, 255);
 
         delay(500);
@@ -125,18 +122,16 @@ void setup() {
         printf("Total EXT RAM banks %i\r\n", xmem::getTotalBanks());
 #endif
         printf("Available heap: %u Bytes\r\n", freeHeap());
+        printf("SP %x\r\n", (uint8_t *)(SP));
 
         // Even though I'm not going to actually be deleting,
         // I want to be able to have slightly more control.
         // Besides, it is easier to initialize stuff...
 
-        // Unfortunately, for whatever reason, this won't work :-(
-        //Usb = new USB();
-        //printf("Available heap: %u Bytes\r\n", freeHeap());
-
         for (int i = 0; i < MAX_HUBS; i++) {
                 Bulk[i] = new BulkOnly(&Usb);
                 printf("Available heap: %u Bytes\r\n", freeHeap());
+                printf("SP %x\r\n", (uint8_t *)(SP));
         }
         while (Usb.Init() == -1) {
                 printf("No\r\n");
@@ -234,8 +229,11 @@ void loop() {
         }
         // Print a heap status report about every 10 seconds.
         if (millis() >= HEAPnext_time) {
-                if (UsbDEBUGlvl > 0x50)
+                if (UsbDEBUGlvl > 0x50) {
+                        {
                         printf("Available heap: %u Bytes\r\n", freeHeap());
+                        }
+                }
                 HEAPnext_time = millis() + 10000;
         }
 
