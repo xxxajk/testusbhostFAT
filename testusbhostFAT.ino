@@ -45,8 +45,8 @@ part_t parts[MAX_PARTS];
 
 
 static USB Usb;
-USBHub *Hubs[MAX_HUBS];
-PFAT *Fats[MAX_PARTS];
+static USBHub *Hubs[MAX_HUBS];
+static PFAT *Fats[MAX_PARTS];
 
 #define prescale1       ((1 << WGM12) | (1 << CS10))
 #define prescale8       ((1 << WGM12) | (1 << CS11))
@@ -118,7 +118,6 @@ void setup() {
         analogWrite(led, 0);
         LEDnext_time = millis() + 1;
 #ifdef EXT_RAM
-        xmem::begin(true);
         printf("Total EXT RAM banks %i\r\n", xmem::getTotalBanks());
 #endif
         printf("Available heap: %u Bytes\r\n", freeHeap());
@@ -129,6 +128,7 @@ void setup() {
         // Besides, it is easier to initialize stuff...
 
         for (int i = 0; i < MAX_HUBS; i++) {
+                //Hubs[i] = new USBHub(&Usb);
                 Bulk[i] = new BulkOnly(&Usb);
                 printf("Available heap: %u Bytes\r\n", freeHeap());
                 printf("SP %x\r\n", (uint8_t *)(SP));
@@ -308,7 +308,7 @@ void loop() {
                 // This is horrible, and needs to be moved elsewhere!
                 // Also does not properly detect a single connect/disconnect on a hub yet.
                 for (int B = 0; B < MAX_HUBS; B++) {
-                        if (!partsready && Bulk[B]->GetAddress() != NULL) {
+                        if (!partsready && Bulk[B]->GetAddress()) {
                                 // Build a list.
                                 int ML = Bulk[B]->GetbMaxLUN();
                                 printf("MAXLUN =%i\r\n", ML);
