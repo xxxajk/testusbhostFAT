@@ -44,7 +44,7 @@ volatile boolean reportlvl = false;
 int cpart = 0;
 PCPartition *PT;
 
-#define MAX_HUBS 1
+#define MAX_HUBS 2
 
 static USBHub *Hubs[MAX_HUBS];
 static PFAT *Fats[MAX_PARTS];
@@ -282,6 +282,7 @@ void loop() {
                         notified = false;
                         cpart = 0;
                 }
+#if 0
                 if (current_state == 0xa0) {
                         printf("VBUS off\r\n");
                         // safe to do here
@@ -291,6 +292,7 @@ void loop() {
                         usbon_time = millis() + 2000;
                         change = false;
                 }
+#endif
                 last_state = current_state;
         }
 
