@@ -2,14 +2,6 @@
 <configurationDescriptor version="80">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="testusbhost" root=".">
-      <df name="build">
-        <in>WInterrupts.lst</in>
-        <in>testusbhost_ino.cpp</in>
-        <in>wiring.lst</in>
-        <in>wiring_analog.lst</in>
-        <in>wiring_digital.lst</in>
-        <in>wiring_pulse.lst</in>
-      </df>
       <in>testusbhostFAT.ino</in>
     </df>
     <logicalFolder name="ExternalFiles"

@@ -1,7 +1,11 @@
 
 
 /*
-  Mega + USB storage + expansion RAM + funky status LED
+ * Mega + USB storage + expansion RAM + funky status LED
+ *
+ * IMPORTANT! PLEASE USE Arduino 1.0.5 or better from github!
+ * Older versions HAVE MAJOR BUGS AND WILL NOT WORK!
+ *
  */
 
 // Comment out xmem.h include if you do not have the library.
@@ -38,15 +42,14 @@ volatile uint32_t usbon_time;
 volatile boolean change = false;
 volatile boolean reportlvl = false;
 int cpart = 0;
-// Only used during discovery.
 PCPartition *PT;
-storage_t sto[MAX_PARTS];
-part_t parts[MAX_PARTS];
 
+#define MAX_HUBS 1
 
-static USB Usb;
 static USBHub *Hubs[MAX_HUBS];
 static PFAT *Fats[MAX_PARTS];
+static part_t parts[MAX_PARTS];
+static storage_t sto[MAX_PARTS];
 
 #define prescale1       ((1 << WGM12) | (1 << CS10))
 #define prescale8       ((1 << WGM12) | (1 << CS11))
@@ -79,7 +82,7 @@ static int my_putc(char c, FILE *t) {
 void setup() {
         // Set this to higher values to enable more debug information
         // minimum 0x00, maximum 0xff
-        UsbDEBUGlvl = 0x7f;
+        UsbDEBUGlvl = 0x51;
         // declare pin 9 to be an output:
         pinMode(led, OUTPUT);
         pinMode(2, OUTPUT);
@@ -128,12 +131,11 @@ void setup() {
         // Besides, it is easier to initialize stuff...
 
         for (int i = 0; i < MAX_HUBS; i++) {
-                //Hubs[i] = new USBHub(&Usb);
-                Bulk[i] = new BulkOnly(&Usb);
+                Hubs[i] = new USBHub(&Usb);
                 printf("Available heap: %u Bytes\r\n", freeHeap());
                 printf("SP %x\r\n", (uint8_t *)(SP));
         }
-        while (Usb.Init() == -1) {
+         while (Usb.Init() == -1) {
                 printf("No\r\n");
                 Notify(PSTR("OSC did not start."), 0x40);
         }
@@ -223,17 +225,10 @@ void die(FRESULT rc) {
 }
 
 void loop() {
-        if (reportlvl) {
-                printf("Current UsbDEBUGlvl %02x\r\n", UsbDEBUGlvl);
-                reportlvl = false;
-        }
         // Print a heap status report about every 10 seconds.
         if (millis() >= HEAPnext_time) {
-                if (UsbDEBUGlvl > 0x50) {
-                        {
+                if (UsbDEBUGlvl > 0x50)
                         printf("Available heap: %u Bytes\r\n", freeHeap());
-                        }
-                }
                 HEAPnext_time = millis() + 10000;
         }
 
@@ -257,7 +252,6 @@ void loop() {
                         usbon_time = millis() + 2000;
                 }
         }
-
         Usb.Task();
         current_state = Usb.getUsbTaskState();
         if (current_state != last_state) {
@@ -282,6 +276,7 @@ void loop() {
                         for (int i = 0; i < cpart; i++) {
                                 if (Fats[i] != NULL)
                                         delete Fats[i];
+                                Fats[cpart] = NULL;
                         }
                         fatready = false;
                         notified = false;
@@ -307,16 +302,15 @@ void loop() {
 
                 // This is horrible, and needs to be moved elsewhere!
                 // Also does not properly detect a single connect/disconnect on a hub yet.
-                for (int B = 0; B < MAX_HUBS; B++) {
-                        if (!partsready && Bulk[B]->GetAddress()) {
+                for (int B = 0; B < MAX_DRIVERS; B++) {
+                        if (!partsready && Bulk[B]->GetAddress() != NULL) {
                                 // Build a list.
                                 int ML = Bulk[B]->GetbMaxLUN();
-                                printf("MAXLUN =%i\r\n", ML);
+                                //printf("MAXLUN = %i\r\n", ML);
                                 ML++;
                                 for (int i = 0; i < ML; i++) {
-                                        volatile Capacity capacity;
-                                        int rcode = Bulk[B]->ReadCapacity(i, sizeof (Capacity), (uint8_t*) & capacity);
-                                        if (!rcode) {
+                                        if (Bulk[B]->LUNIsGood(i)) {
+                                                partsready = true;
                                                 sto[i].private_data = &info[i];
                                                 info[i].lun = i;
                                                 info[i].B = B;
@@ -325,8 +319,9 @@ void loop() {
                                                 sto[i].Write = *PWrite;
                                                 sto[i].Reads = *PReads;
                                                 sto[i].Writes = *PWrites;
-                                                sto[i].TotalSectors = ((uint32_t)capacity.data[0] << 24) + ((uint32_t)capacity.data[1] << 16) + ((uint32_t)capacity.data[2] << 8) + (uint32_t)capacity.data[3];
-                                                sto[i].SectorSize = ((uint16_t)capacity.data[6] << 8) + (uint16_t)capacity.data[7];
+                                                sto[i].Status = *PStatus;
+                                                sto[i].TotalSectors = Bulk[B]->GetCapacity(i);
+                                                sto[i].SectorSize = Bulk[B]->GetSectorSize(i);
                                                 printf("LUN:\t\t%u\r\n", i);
                                                 printf("Total Sectors:\t%08lx\t%lu\r\n", sto[i].TotalSectors, sto[i].TotalSectors);
                                                 printf("Sector Size:\t%04x\t\t%u\r\n", sto[i].SectorSize, sto[i].SectorSize);
@@ -346,6 +341,7 @@ void loop() {
                                                                                 int r = Fats[cpart]->Init(&sto[i], cpart, parts[cpart].firstSector);
                                                                                 if (r) {
                                                                                         delete Fats[cpart];
+                                                                                        Fats[cpart] = NULL;
                                                                                 } else cpart++;
                                                                         }
                                                                 }
@@ -357,6 +353,7 @@ void loop() {
                                                         if (r) {
                                                                 printf("Superblock error %x\r\n", r);
                                                                 delete Fats[cpart];
+                                                                Fats[cpart] = NULL;
                                                         } else cpart++;
 
                                                 }
@@ -367,13 +364,33 @@ void loop() {
                                                 sto[i].Writes = NULL;
                                                 sto[i].Reads = NULL;
                                                 sto[i].TotalSectors = 0UL;
-                                                sto[i].SectorSize = 0UL;
+                                                sto[i].SectorSize = 0;
                                         }
                                 }
-                                partsready = true;
+
                         }
                 }
 
+                if (fatready) {
+                        if (Fats[0] != NULL) {
+                                struct Pvt * p;
+                                p = ((struct Pvt *)(Fats[0]->storage->private_data));
+                                if (!Bulk[p->B]->LUNIsGood(p->lun)) {
+                                        // media change
+                                        fadeAmount = 80;
+                                        partsready = false;
+                                        for (int i = 0; i < cpart; i++) {
+                                                if (Fats[i] != NULL)
+                                                        delete Fats[i];
+                                                Fats[cpart] = NULL;
+                                        }
+                                        fatready = false;
+                                        notified = false;
+                                        cpart = 0;
+                                }
+
+                        }
+                }
                 if (fatready) {
                         if (!notified) {
                                 fadeAmount = 5;

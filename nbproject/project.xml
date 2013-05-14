@@ -5,7 +5,7 @@
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
             <name>testusbhostFAT</name>
             <c-extensions/>
-            <cpp-extensions>cpp,ino</cpp-extensions>
+            <cpp-extensions>ino</cpp-extensions>
             <header-extensions/>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects>
