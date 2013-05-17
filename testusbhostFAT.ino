@@ -80,6 +80,9 @@ static int my_putc(char c, FILE *t) {
 }
 
 void setup() {
+        for (int i = 0; i < MAX_PARTS; i++) {
+                Fats[i] = NULL;
+        }
         // Set this to higher values to enable more debug information
         // minimum 0x00, maximum 0xff
         UsbDEBUGlvl = 0x51;
@@ -103,12 +106,12 @@ void setup() {
         analogWrite(led, 255);
         delay(500);
         analogWrite(led, 0);
-        printf("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n");
-        printf("Current UsbDEBUGlvl %02x\r\n", UsbDEBUGlvl);
-        printf("'+' and '-' increase/decrease by 0x01\r\n");
-        printf("'.' and ',' increase/decrease by 0x10\r\n");
-        printf("'t' will run a 10MB write/read test and print out the time it took.\r\n");
-        printf("'e' will toggle vbus off for a few moments.\r\n");
+        printf_P(PSTR("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n"));
+        printf_P(PSTR("Current UsbDEBUGlvl %02x\r\n"), UsbDEBUGlvl);
+        printf_P(PSTR("'+' and '-' increase/decrease by 0x01\r\n"));
+        printf_P(PSTR("'.' and ',' increase/decrease by 0x10\r\n"));
+        printf_P(PSTR("'t' will run a 10MB write/read test and print out the time it took.\r\n"));
+        printf_P(PSTR("'e' will toggle vbus off for a few moments.\r\n"));
         analogWrite(led, 255);
 
         delay(500);
@@ -121,10 +124,10 @@ void setup() {
         analogWrite(led, 0);
         LEDnext_time = millis() + 1;
 #ifdef EXT_RAM
-        printf("Total EXT RAM banks %i\r\n", xmem::getTotalBanks());
+        printf_P(PSTR("Total EXT RAM banks %i\r\n"), xmem::getTotalBanks());
 #endif
-        printf("Available heap: %u Bytes\r\n", freeHeap());
-        printf("SP %x\r\n", (uint8_t *)(SP));
+        printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
+        printf_P(PSTR("SP %x\r\n"), (uint8_t *)(SP));
 
         // Even though I'm not going to actually be deleting,
         // I want to be able to have slightly more control.
@@ -132,11 +135,11 @@ void setup() {
 
         for (int i = 0; i < MAX_HUBS; i++) {
                 Hubs[i] = new USBHub(&Usb);
-                printf("Available heap: %u Bytes\r\n", freeHeap());
-                printf("SP %x\r\n", (uint8_t *)(SP));
+                printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
+                printf_P(PSTR("SP %x\r\n"), (uint8_t *)(SP));
         }
          while (Usb.Init() == -1) {
-                printf("No\r\n");
+                printf_P(PSTR("No\r\n"));
                 Notify(PSTR("OSC did not start."), 0x40);
         }
         // usb VBUS _OFF_
@@ -219,7 +222,7 @@ bool isfat(uint8_t t) {
 }
 
 void die(FRESULT rc) {
-        printf("Failed with rc=%u.\r\n", rc);
+        printf_P(PSTR("Failed with rc=%u.\r\n"), rc);
         //for (;;);
 
 }
@@ -228,7 +231,7 @@ void loop() {
         // Print a heap status report about every 10 seconds.
         if (millis() >= HEAPnext_time) {
                 if (UsbDEBUGlvl > 0x50)
-                        printf("Available heap: %u Bytes\r\n", freeHeap());
+                        printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
                 HEAPnext_time = millis() + 10000;
         }
 
@@ -242,7 +245,7 @@ void loop() {
         if (change) {
                 change = false;
                 if (usbon) {
-                        printf("VBUS on\r\n");
+                        printf_P(PSTR("VBUS on\r\n"));
                         Usb.gpioWr(0xFF);
                         digitalWrite(2, 1);
                 } else {
@@ -256,7 +259,7 @@ void loop() {
         current_state = Usb.getUsbTaskState();
         if (current_state != last_state) {
                 if (UsbDEBUGlvl > 0x50)
-                        printf("USB state = %x\r\n", current_state);
+                        printf_P(PSTR("USB state = %x\r\n"), current_state);
                 if (current_state == USB_STATE_RUNNING) {
                         fadeAmount = 30;
                         /*
@@ -276,7 +279,7 @@ void loop() {
                         for (int i = 0; i < cpart; i++) {
                                 if (Fats[i] != NULL)
                                         delete Fats[i];
-                                Fats[cpart] = NULL;
+                                Fats[i] = NULL;
                         }
                         fatready = false;
                         notified = false;
@@ -284,7 +287,7 @@ void loop() {
                 }
 #if 0
                 if (current_state == 0xa0) {
-                        printf("VBUS off\r\n");
+                        printf_P(PSTR("VBUS off\r\n"));
                         // safe to do here
                         Usb.gpioWr(0x00);
                         digitalWrite(2, 0);
@@ -324,9 +327,9 @@ void loop() {
                                                 sto[i].Status = *PStatus;
                                                 sto[i].TotalSectors = Bulk[B]->GetCapacity(i);
                                                 sto[i].SectorSize = Bulk[B]->GetSectorSize(i);
-                                                printf("LUN:\t\t%u\r\n", i);
-                                                printf("Total Sectors:\t%08lx\t%lu\r\n", sto[i].TotalSectors, sto[i].TotalSectors);
-                                                printf("Sector Size:\t%04x\t\t%u\r\n", sto[i].SectorSize, sto[i].SectorSize);
+                                                printf_P(PSTR("LUN:\t\t%u\r\n"), i);
+                                                printf_P(PSTR("Total Sectors:\t%08lx\t%lu\r\n"), sto[i].TotalSectors, sto[i].TotalSectors);
+                                                printf_P(PSTR("Sector Size:\t%04x\t\t%u\r\n"), sto[i].SectorSize, sto[i].SectorSize);
                                                 // get the partition data...
                                                 PT = new PCPartition;
 
@@ -336,7 +339,7 @@ void loop() {
                                                                 apart = PT->GetPart(j);
                                                                 if (apart != NULL && apart->type != 0x00) {
                                                                         memcpy(&(parts[cpart]), apart, sizeof (part_t));
-                                                                        printf("Partition %u type %#02x\r\n", j, parts[cpart].type);
+                                                                        printf_P(PSTR("Partition %u type %#02x\r\n"), j, parts[cpart].type);
                                                                         // for now
                                                                         if (isfat(parts[cpart].type)) {
                                                                                 Fats[cpart] = new PFAT;
@@ -353,7 +356,7 @@ void loop() {
                                                         Fats[cpart] = new PFAT;
                                                         int r = Fats[cpart]->Init(&sto[i], cpart, 0);
                                                         if (r) {
-                                                                printf("Superblock error %x\r\n", r);
+                                                                printf_P(PSTR("Superblock error %x\r\n"), r);
                                                                 delete Fats[cpart];
                                                                 Fats[cpart] = NULL;
                                                         } else cpart++;
@@ -403,11 +406,11 @@ void loop() {
                                 DIR dir; /* Directory object */
                                 FILINFO fno; /* File information object */
                                 UINT bw, br, i;
-                                printf("\r\nOpen an existing file (message.txt).\r\n");
+                                printf_P(PSTR("\r\nOpen an existing file (message.txt).\r\n"));
                                 rc = f_open(&Fil, "0:/MESSAGE.TXT", FA_READ);
-                                if (rc) printf("Error %i, message.txt not found.\r\n");
+                                if (rc) printf_P(PSTR("Error %i, message.txt not found.\r\n"));
                                 else {
-                                        printf("\r\nType the file content.\r\n");
+                                        printf_P(PSTR("\r\nType the file content.\r\n"));
                                         for (;;) {
                                                 rc = f_read(&Fil, Buff, sizeof Buff, &br); /* Read a chunk of file */
                                                 if (rc || !br) break; /* Error or end of file */
@@ -424,28 +427,28 @@ void loop() {
                                                 goto out;
                                         }
 
-                                        printf("\r\nClose the file.\r\n");
+                                        printf_P(PSTR("\r\nClose the file.\r\n"));
                                         rc = f_close(&Fil);
                                         if (rc) goto out;
                                 }
-                                printf("\r\nCreate a new file (hello.txt).\r\n");
+                                printf_P(PSTR("\r\nCreate a new file (hello.txt).\r\n"));
                                 rc = f_open(&Fil, "0:/Hello.TxT", FA_WRITE | FA_CREATE_ALWAYS);
                                 if (rc) goto out;
 
-                                printf("\r\nWrite a text data. (Hello world!)\r\n");
+                                printf_P(PSTR("\r\nWrite a text data. (Hello world!)\r\n"));
                                 rc = f_write(&Fil, "Hello world!\r\n", 14, &bw);
                                 if (rc) goto out;
-                                printf("%u bytes written.\r\n", bw);
+                                printf_P(PSTR("%u bytes written.\r\n"), bw);
 
-                                printf("\r\nClose the file.\r\n");
+                                printf_P(PSTR("\r\nClose the file.\r\n"));
                                 rc = f_close(&Fil);
                                 if (rc) goto out;
 
-                                printf("\r\nOpen root directory.\r\n");
+                                printf_P(PSTR("\r\nOpen root directory.\r\n"));
                                 rc = f_opendir(&dir, "0:/");
                                 if (rc) goto out;
 
-                                printf("\r\nDirectory listing...\r\n");
+                                printf_P(PSTR("\r\nDirectory listing...\r\n"));
                                 for (;;) {
                                         rc = f_readdir(&dir, &fno); /* Read a directory item */
                                         if (rc || !fno.fname[0]) break; /* Error or end of dir */
@@ -467,18 +470,18 @@ void loop() {
                                                 att[5] = 'a';
                                         }
                                         if (*fno.lfname)
-                                                printf("%s %8lu  %s (%s)\r\n", att, fno.fsize, fno.fname, fno.lfname);
+                                                printf_P(PSTR("%s %8lu  %s (%s)\r\n"), att, fno.fsize, fno.fname, fno.lfname);
                                         else
-                                                printf("%s %8lu  %s\r\n", att, fno.fsize, fno.fname);
+                                                printf_P(PSTR("%s %8lu  %s\r\n"), att, fno.fsize, fno.fname);
                                 }
 out:
                                 if (rc) die(rc);
-                                printf("\r\nTest completed.\r\n");
+                                printf_P(PSTR("\r\nTest completed.\r\n"));
 
                         }
                         if (runtest) {
                                 runtest = false;
-                                printf("\r\nCreate a new 10MB test file (10MB.bin).\r\n");
+                                printf_P(PSTR("\r\nCreate a new 10MB test file (10MB.bin).\r\n"));
                                 FIL Fil; /* File object */
                                 BYTE Buff[512]; /* File read buffer */
                                 FRESULT rc; /* Result code */
@@ -496,7 +499,7 @@ out:
                                 if (rc) die(rc);
                                 end = millis();
                                 wt = end - start;
-                                printf("Time to write 10485760 bytes: %lu ms (%lu sec) \r\n", wt, (500 + wt) / 1000UL);
+                                printf_P(PSTR("Time to write 10485760 bytes: %lu ms (%lu sec) \r\n"), wt, (500 + wt) / 1000UL);
                                 rc = f_open(&Fil, "0:/10MB.bin", FA_READ);
                                 start = millis();
                                 if (rc) die(rc);
@@ -509,10 +512,10 @@ out:
                                 rc = f_close(&Fil);
                                 if (rc) die(rc);
                                 rt = end - start;
-                                printf("Time to read 10485760 bytes: %lu ms (%lu sec)\r\nDelete test file\r\n", rt, (500 + rt) / 1000UL);
+                                printf_P(PSTR("Time to read 10485760 bytes: %lu ms (%lu sec)\r\nDelete test file\r\n"), rt, (500 + rt) / 1000UL);
                                 rc = f_unlink("0:/10MB.bin");
                                 if (rc) die(rc);
-                                printf("10MB timing test finished.\r\n");
+                                printf_P(PSTR("10MB timing test finished.\r\n"));
                         }
                 }
         }
