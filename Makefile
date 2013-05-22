@@ -18,4 +18,4 @@ LIB_DIRS =
 LIB_DIRS += ../libraries/xmem
 LIB_DIRS += ../libraries/USB_Host_Shield_2.0
 LIB_DIRS += ../libraries/generic_storage
-include ../_Makefile.master
+include ../Arduino_Makefile_master/_Makefile.master
