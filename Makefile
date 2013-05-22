@@ -1,6 +1,6 @@
 #
 # These are set for a mega 1280 + quadram plus my serial patch.
-#
+# If you lack quadram, or want to disable LFN, just change _FS_TINY=1 _USE_LFN=0
 #
 
 BOARD = mega

@@ -282,7 +282,7 @@ ISR(TIMER3_COMPA_vect) {
                 }
         }
 }
-}
+
 
 bool isfat(uint8_t t) {
         return (t == 0x01 || t == 0x04 || t == 0x06 || t == 0x0b || t == 0x0c || t == 0x0e || t == 0x1);
@@ -296,9 +296,9 @@ void die(FRESULT rc) {
 
 /*make sure this is a power of two. */
 #define mbxs 128
-uint8_t My_Buff_x[mbxs]; /* File read buffer */
 
 void loop() {
+        uint8_t My_Buff_x[mbxs]; /* File read buffer */
         FIL My_File_Object_x; /* File object */
         DIR My_Dir_Object_x; /* Directory object */
         FILINFO My_File_Info_Object_x; /* File information object */
