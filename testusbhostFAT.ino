@@ -13,7 +13,6 @@
 // Keep this at zero until enumeration is fixed.
 // Set to 1 if you are fixing enumeration.
 #define WANT_HUB_TEST 0
-
 #ifndef HAVE_XMEM
 // Set this to zero to disable xmem
 #define HAVE_XMEM 1
@@ -40,6 +39,10 @@
 #include <Storage.h>
 #include <FAT/FAT.h>
 
+// Warning! Do not use this unless you are aware of what it does!
+#if HAVE_XMEM
+#define GOD_MODE 0
+#endif
 static FILE mystdout;
 
 int led = 13; // the pin that the LED is attached to
@@ -183,14 +186,22 @@ void setup() {
         cli();
         TCCR3A = 0;
         TCCR3B = 0;
-        // (0.01/(1/((16 *(10^6)) / 8))) - 1
+        // (0.01/(1/((16 *(10^6)) / 8))) - 1 = 19999
+#if GOD_MODE
+        OCR3A = 10;
+#else
         OCR3A = 19999;
+#endif
         TCCR3B |= prescale8;
         TIMSK3 |= (1 << OCIE1A);
         sei();
 
         HEAPnext_time = millis() + 10000;
 }
+
+#if GOD_MODE
+volatile uint16_t *foof = reinterpret_cast<uint16_t *>(0x2200);
+#endif
 
 void serialEvent() {
         // Adjust UsbDEBUGlvl level on-the-fly.
@@ -227,11 +238,30 @@ void serialEvent() {
                                 change = true;
                                 usbon = false;
                                 break;
+#if GOD_MODE
+                        case 'z':
+                                cli();
+                                *foof = 0xffff;
+                                *(foof + 2) = 0x0000;
+                                sei();
+                                break;
+#endif
                 }
         }
 }
 
 ISR(TIMER3_COMPA_vect) {
+#if GOD_MODE
+#if !EXT_RAM_HEAP && !EXT_RAM_STACK
+        // Super cool debug feature to detect stack and heap collisions.
+        // We can use this in conjuction with the AVR dragon
+        // to check max depth of the stack and height of heap.
+        if (*foof >= (uint16_t)(SP)) {
+                *foof = (uint16_t)(SP);
+                *(foof + 2) = (uint16_t)__brkval;
+        }
+#endif
+#endif
         if (millis() >= LEDnext_time) {
                 LEDnext_time = millis() + 30;
 
@@ -252,6 +282,7 @@ ISR(TIMER3_COMPA_vect) {
                 }
         }
 }
+}
 
 bool isfat(uint8_t t) {
         return (t == 0x01 || t == 0x04 || t == 0x06 || t == 0x0b || t == 0x0c || t == 0x0e || t == 0x1);
@@ -264,19 +295,25 @@ void die(FRESULT rc) {
 }
 
 /*make sure this is a power of two. */
-#define mbxs 8
+#define mbxs 128
 uint8_t My_Buff_x[mbxs]; /* File read buffer */
+
+void loop() {
         FIL My_File_Object_x; /* File object */
         DIR My_Dir_Object_x; /* Directory object */
         FILINFO My_File_Info_Object_x; /* File information object */
 
-
-void loop() {
-
         // Print a heap status report about every 10 seconds.
         if (millis() >= HEAPnext_time) {
-                if (UsbDEBUGlvl > 0x50)
+                if (UsbDEBUGlvl > 0x50) {
                         printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
+#if GOD_MODE
+                        cli();
+                        uint16_t p = *foof;
+                        sei();
+                        printf_P(PSTR("MAXSP %4.4x, current %4.4x\r\n"), p, SP);
+#endif
+                }
                 HEAPnext_time = millis() + 10000;
         }
 
@@ -512,7 +549,7 @@ outdir:
                                         } else {
                                                 Serial.write('-');
                                         }
-                                                Serial.write('r');
+                                        Serial.write('r');
 
                                         if (My_File_Info_Object_x.fattrib & AM_RDO) {
                                                 Serial.write('-');
@@ -520,8 +557,8 @@ outdir:
                                                 Serial.write('w');
                                         }
                                         if (My_File_Info_Object_x.fattrib & AM_HID) {
-                                                 Serial.write('h');
-                                       } else {
+                                                Serial.write('h');
+                                        } else {
                                                 Serial.write('-');
                                         }
 
