@@ -35,7 +35,7 @@ EXTRA_FLAGS += -D DISABLE_SERIAL3
 # The following are the libraries used.
 LIB_DIRS =
 LIB_DIRS += ../libraries/xmem
-LIB_DIRS += ../libraries/USB_Host_Shield_2.0
+LIB_DIRS += ../libraries/USB_Host_Shield_2_0
 LIB_DIRS += ../libraries/generic_storage
 
 # And finally, the part that brings everything together for you.
