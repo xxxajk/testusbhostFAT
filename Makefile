@@ -22,15 +22,17 @@ EXTRA_FLAGS += -D HAVEXMEM=1
 EXTRA_FLAGS += -D EXT_RAM_STACK=1
 EXTRA_FLAGS += -D EXT_RAM_HEAP=1
 
-
-
 EXTRA_FLAGS += -D DISABLE_SERIAL1
 EXTRA_FLAGS += -D DISABLE_SERIAL2
-EXTRA_FLAGS += -D DISABLE_SERIAL3
 
-# You should not need to change this, but I place it here if you want to play.
-# These are the defaults for the optimization of the flash and ram
-#OPT_FLAGS = -Os -fno-exceptions -ffunction-sections -fdata-sections -MMD
+#
+# Advanced debug on Serial3
+#
+
+# comment out this line and uncomment the next two to enable debug on Serial3
+EXTRA_FLAGS += -D DISABLE_SERIAL3
+#EXTRA_FLAGS += -D USB_HOST_SERIAL=Serial3
+#EXTRA_FLAGS += -D DEBUG_USB_HOST
 
 # The following are the libraries used.
 LIB_DIRS =

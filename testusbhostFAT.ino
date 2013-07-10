@@ -30,6 +30,7 @@
 #if WANT_HUB_TEST
 #include <usbhub.h>
 #endif
+#include <RTClib.h>
 #include <masstorage.h>
 #include <message.h>
 #include <avr/interrupt.h>
@@ -41,9 +42,12 @@
 #if HAVE_XMEM
 #define GOD_MODE 0
 #endif
-static FILE mystdout;
+static FILE tty_stdio;
+static FILE tty_stderr;
+USB Usb;
 
-int led = 13; // the pin that the LED is attached to
+#define LED 13 // the pin that the LED is attached to
+
 volatile int brightness = 0; // how bright the LED is
 volatile int fadeAmount = 80; // how many points to fade the LED by
 volatile uint8_t current_state = 1;
@@ -63,7 +67,7 @@ PCPartition *PT;
 
 #if WANT_HUB_TEST
 #define MAX_HUBS 2
-static USBHub *Hubs[MAX_HUBS];
+USBHub *Hubs[MAX_HUBS];
 #endif
 
 static PFAT *Fats[_VOLUMES];
@@ -78,85 +82,99 @@ static storage_t sto[_VOLUMES];
 
 extern "C" unsigned int freeHeap();
 
-/*
-unsigned int getHeapend(){
-        extern unsigned int __heap_start;
-
-        if ((unsigned int)__brkval == 0) {
-                return (unsigned int)&__heap_start;
-        } else {
-                return (unsigned int)__brkval;
-        }
+static int tty_stderr_putc(char c, FILE *t) {
+        USB_HOST_SERIAL.write(c);
 }
 
-unsigned int freeHeap() {
-        if (SP < (unsigned int)__malloc_heap_start) {
-                return ((unsigned int)__malloc_heap_end - getHeapend());
-        } else {
-                return (SP - getHeapend());
-        }
-}
- */
-static int my_putc(char c, FILE *t) {
+static int tty_std_putc(char c, FILE *t) {
         Serial.write(c);
 }
 
+static int tty_std_getc(FILE *t) {
+        while (!Serial.available());
+        return Serial.read();
+}
+
 void setup() {
+        boolean serr = false;
         for (int i = 0; i < _VOLUMES; i++) {
                 Fats[i] = NULL;
+                sto[i].private_data = new pvt_t;
+                ((pvt_t *)sto[i].private_data)->B = 255; // impossible
         }
         // Set this to higher values to enable more debug information
         // minimum 0x00, maximum 0xff
         UsbDEBUGlvl = 0x51;
-        // declare pin 9 to be an output:
-        pinMode(led, OUTPUT);
+        // make LED pin as an output:
+        pinMode(LED, OUTPUT);
         pinMode(2, OUTPUT);
+        // Ensure TX is off
+        _SFR_BYTE(UCSR0B) &= ~_BV(TXEN0);
         // Initialize 'debug' serial port
-        Serial.begin(115200);
+        USB_HOST_SERIAL.begin(115200);
+        // Do not start primary Serial port if already started.
+        if (bit_is_clear(UCSR0B, TXEN0)) {
+                Serial.begin(115200);
+                serr = true;
+        }
 
-        //fdevopen(&my_putc, 0);
-        // too bad we can't tinker with iob directly, oh well.
-        mystdout.put = my_putc;
-        mystdout.get = NULL;
-        mystdout.flags = _FDEV_SETUP_WRITE;
-        mystdout.udata = 0;
-        stdout = &mystdout;
+        // Set up stdio/stderr
+        tty_stdio.put = tty_std_putc;
+        tty_stdio.get = tty_std_getc;
+        tty_stdio.flags = _FDEV_SETUP_RW;
+        tty_stdio.udata = 0;
+        stdout = &tty_stdio;
+        stdin = &tty_stdio;
 
-        // Blink pin 9:
+        tty_stderr.put = tty_stderr_putc;
+        tty_stderr.get = NULL;
+        tty_stderr.flags = _FDEV_SETUP_WRITE;
+        tty_stderr.udata = 0;
+        stderr = &tty_stderr;
+
+        // Blink LED
         delay(500);
-        analogWrite(led, 255);
+        analogWrite(LED, 255);
         delay(500);
-        analogWrite(led, 0);
+        analogWrite(LED, 0);
         delay(500);
-        analogWrite(led, 255);
-        delay(500);
-        analogWrite(led, 0);
-        delay(500);
-        analogWrite(led, 255);
-        delay(500);
-        analogWrite(led, 0);
         printf_P(PSTR("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n"));
         printf_P(PSTR("Current UsbDEBUGlvl %02x\r\n"), UsbDEBUGlvl);
         printf_P(PSTR("'+' and '-' increase/decrease by 0x01\r\n"));
         printf_P(PSTR("'.' and ',' increase/decrease by 0x10\r\n"));
         printf_P(PSTR("'t' will run a 10MB write/read test and print out the time it took.\r\n"));
-        printf_P(PSTR("'e' will toggle vbus off for a few moments.\r\n"));
-        printf_P(PSTR("\r\n\r\nLong filename support: "
+        printf_P(PSTR("'e' will toggle vbus off for a few moments.\r\n\r\n"));
+        printf_P(PSTR("Long filename support: "
 #if _USE_LFN
                 "Enabled"
 #else
                 "Disabled"
 #endif
                 "\r\n"));
-        analogWrite(led, 255);
+        if (serr) {
+                fprintf_P(stderr, PSTR("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n"));
+                fprintf_P(stderr, PSTR("Current UsbDEBUGlvl %02x\r\n"), UsbDEBUGlvl);
+                fprintf_P(stderr, PSTR("Long filename support: "
+#if _USE_LFN
+                        "Enabled"
+#else
+                        "Disabled"
+#endif
+                        "\r\n"));
+        }
+        analogWrite(LED, 255);
         delay(500);
-        analogWrite(led, 0);
+        analogWrite(LED, 0);
+        delay(500);
+        analogWrite(LED, 255);
+        delay(500);
+        analogWrite(LED, 0);
+        delay(500);
+        analogWrite(LED, 255);
+        delay(500);
+        analogWrite(LED, 0);
         delay(500);
 
-        delay(100);
-        analogWrite(led, 255);
-        delay(100);
-        analogWrite(led, 0);
         LEDnext_time = millis() + 1;
 #ifdef EXT_RAM
         printf_P(PSTR("Total EXT RAM banks %i\r\n"), xmem::getTotalBanks());
@@ -263,8 +281,8 @@ ISR(TIMER3_COMPA_vect) {
         if (millis() >= LEDnext_time) {
                 LEDnext_time = millis() + 30;
 
-                // set the brightness of pin 9:
-                analogWrite(led, brightness);
+                // set the brightness of LED
+                analogWrite(LED, brightness);
 
                 // change the brightness for next time through the loop:
                 brightness = brightness + fadeAmount;
@@ -280,7 +298,6 @@ ISR(TIMER3_COMPA_vect) {
                 }
         }
 }
-
 
 bool isfat(uint8_t t) {
         return (t == 0x01 || t == 0x04 || t == 0x06 || t == 0x0b || t == 0x0c || t == 0x0e || t == 0x1);
@@ -395,9 +412,8 @@ void loop() {
                                 for (int i = 0; i < ML; i++) {
                                         if (Bulk[B]->LUNIsGood(i)) {
                                                 partsready = true;
-                                                sto[i].private_data = &info[i];
-                                                info[i].lun = i;
-                                                info[i].B = B;
+                                                ((pvt_t *)sto[i].private_data)->lun = i;
+                                                ((pvt_t *)sto[i].private_data)->B = B;
                                                 sto[i].Read = *PRead;
                                                 sto[i].Write = *PWrite;
                                                 sto[i].Reads = *PReads;
