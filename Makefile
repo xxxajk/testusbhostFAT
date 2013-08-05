@@ -12,8 +12,8 @@ PROGRAMMER = arduino
 # set your Arduino tty port here
 PORT = /dev/ttyUSB0
 
-EXTRA_FLAGS = -D _FS_TINY=0
-EXTRA_FLAGS += -D _USE_LFN=1
+EXTRA_FLAGS = -D _FS_TINY=1
+EXTRA_FLAGS += -D _USE_LFN=3
 
 # Don't worry if you don't have external RAM, xmem2 detects this situation.
 # You *WILL* be wanting to get some kind of external ram on your mega in order to
@@ -22,15 +22,18 @@ EXTRA_FLAGS += -D HAVEXMEM=1
 EXTRA_FLAGS += -D EXT_RAM_STACK=1
 EXTRA_FLAGS += -D EXT_RAM_HEAP=1
 
-EXTRA_FLAGS += -D DISABLE_SERIAL1
-EXTRA_FLAGS += -D DISABLE_SERIAL2
+
+# These are no longer needed for the demo to work.
+# In the event you need more ram, uncomment these 3 lines.
+#EXTRA_FLAGS += -D DISABLE_SERIAL1
+#EXTRA_FLAGS += -D DISABLE_SERIAL2
+#EXTRA_FLAGS += -D DISABLE_SERIAL3
 
 #
 # Advanced debug on Serial3
 #
 
-# comment out this line and uncomment the next two to enable debug on Serial3
-EXTRA_FLAGS += -D DISABLE_SERIAL3
+# uncomment the next two to enable debug on Serial3
 #EXTRA_FLAGS += -D USB_HOST_SERIAL=Serial3
 #EXTRA_FLAGS += -D DEBUG_USB_HOST
 
