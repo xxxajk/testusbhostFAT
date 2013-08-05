@@ -403,7 +403,7 @@ void loop() {
                 }
 
                 // This is horrible, and needs to be moved elsewhere!
-                for (int B = 0; B < MAX_DRIVERS; B++) {
+                for (int B = 0; B < MAX_USB_MS_DRIVERS; B++) {
                         if (!partsready && Bulk[B]->GetAddress() != NULL) {
                                 // Build a list.
                                 int ML = Bulk[B]->GetbMaxLUN();
@@ -554,6 +554,12 @@ outdir:
                                 printf_P(PSTR("\r\nDirectory listing...\r\n"));
                                 printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
                                 for (;;) {
+#if _USE_LFN
+                                        char lfn[_MAX_LFN + 1];
+                                        My_File_Info_Object_x.lfname = lfn;
+                                        My_File_Info_Object_x.lfsize = _MAX_LFN;
+#endif
+
                                         rc = f_readdir(&My_Dir_Object_x, &My_File_Info_Object_x); /* Read a directory item */
                                         if (rc || !My_File_Info_Object_x.fname[0]) break; /* Error or end of dir */
 
