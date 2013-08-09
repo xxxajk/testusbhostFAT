@@ -196,8 +196,8 @@ void setup() {
                 printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
         }
 #endif
-        while (Usb.Init() == -1) {
-                printf_P(PSTR("No\r\n"));
+        while (Usb.Init(1000) == -1) {
+                printf_P(PSTR("No USB HOST Shield?\r\n"));
                 Notify(PSTR("OSC did not start."), 0x40);
         }
         // usb VBUS _OFF_
