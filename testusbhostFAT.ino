@@ -196,14 +196,17 @@ void setup() {
                 printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
         }
 #endif
+        // Initialize generic storage. This must be done before USB starts.
+        InitStorage();
+
         while (Usb.Init(1000) == -1) {
                 printf_P(PSTR("No USB HOST Shield?\r\n"));
                 Notify(PSTR("OSC did not start."), 0x40);
         }
         // usb VBUS _OFF_
-        Usb.gpioWr(0x00);
-        digitalWrite(2, 0);
-        usbon_time = millis() + 2000;
+        //Usb.gpioWr(0x00);
+        //digitalWrite(2, 0);
+        //usbon_time = millis() + 2000;
         cli();
         TCCR3A = 0;
         TCCR3B = 0;
@@ -340,13 +343,10 @@ void loop() {
         if (change) {
                 change = false;
                 if (usbon) {
+                        Usb.vbusPower(VBUS_t(on));
                         printf_P(PSTR("VBUS on\r\n"));
-                        Usb.gpioWr(0xFF);
-                        digitalWrite(2, 1);
                 } else {
-                        Usb.gpioWr(0x00);
-                        digitalWrite(2, 0);
-                        usbon = false;
+                        Usb.vbusPower(VBUS_t(off));
                         usbon_time = millis() + 2000;
                 }
         }
