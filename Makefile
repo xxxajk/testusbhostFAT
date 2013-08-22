@@ -12,9 +12,15 @@ PROGRAMMER = arduino
 # set your Arduino tty port here
 PORT = /dev/ttyUSB0
 
-EXTRA_FLAGS = -D _FS_TINY=1
-EXTRA_FLAGS += -D _USE_LFN=3
+EXTRA_FLAGS = -D _USE_LFN=3
+
+# change to 0 if you have quadram to take advantage of caching FAT
+EXTRA_FLAGS += -D _FS_TINY=1
+
+
 #EXTRA_FLAGS += -D _MAX_SS=2048
+
+
 # Don't worry if you don't have external RAM, xmem2 detects this situation.
 # You *WILL* be wanting to get some kind of external ram on your mega in order to
 # do anything that is intense.
