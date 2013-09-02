@@ -15,10 +15,10 @@ PORT = /dev/ttyUSB0
 EXTRA_FLAGS = -D _USE_LFN=3
 
 # change to 0 if you have quadram to take advantage of caching FAT
-EXTRA_FLAGS += -D _FS_TINY=1
+EXTRA_FLAGS += -D _FS_TINY=0
 
 
-#EXTRA_FLAGS += -D _MAX_SS=2048
+EXTRA_FLAGS += -D _MAX_SS=2048
 
 
 # Don't worry if you don't have external RAM, xmem2 detects this situation.
@@ -40,7 +40,7 @@ EXTRA_FLAGS += -D EXT_RAM_HEAP=1
 #
 
 # uncomment the next two to enable debug on Serial3
-#EXTRA_FLAGS += -D USB_HOST_SERIAL=Serial3
+EXTRA_FLAGS += -D USB_HOST_SERIAL=Serial3
 #EXTRA_FLAGS += -D DEBUG_USB_HOST
 
 # The following are the libraries used.
