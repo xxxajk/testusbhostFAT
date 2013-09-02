@@ -30,9 +30,19 @@
 // Use of Make creates a flash image that is 3.3KB smaller //
 /////////////////////////////////////////////////////////////
 #ifndef USING_MAKEFILE
-#define USB_HOST_SERIAL Serial3
 // Uncomment to enable debugging
 //#define DEBUG_USB_HOST
+// This is where stderr/USB debugging goes to
+#define USB_HOST_SERIAL Serial3
+// If you have external memory, setting this to 0 enables FAT table caches.
+// The 0 setting is recommended only if you have external memory.
+#define _FS_TINY 1
+
+// These you can safely leave alone.
+#define _USE_LFN 3
+#define EXT_RAM_STACK 1
+#define EXT_RAM_HEAP 1
+#define _MAX_SS 512
 #endif
 /////////////////////////////////////////////////////////////
 // End of Arduino IDE specific hacks                       //

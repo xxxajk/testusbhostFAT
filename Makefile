@@ -15,16 +15,15 @@ PORT = /dev/ttyUSB0
 EXTRA_FLAGS = -D _USE_LFN=3
 
 # change to 0 if you have quadram to take advantage of caching FAT
-EXTRA_FLAGS += -D _FS_TINY=0
+EXTRA_FLAGS += -D _FS_TINY=1
 
 
-EXTRA_FLAGS += -D _MAX_SS=2048
+EXTRA_FLAGS += -D _MAX_SS=512
 
 
 # Don't worry if you don't have external RAM, xmem2 detects this situation.
 # You *WILL* be wanting to get some kind of external ram on your mega in order to
 # do anything that is intense.
-EXTRA_FLAGS += -D HAVEXMEM=1
 EXTRA_FLAGS += -D EXT_RAM_STACK=1
 EXTRA_FLAGS += -D EXT_RAM_HEAP=1
 
@@ -48,6 +47,7 @@ LIB_DIRS =
 LIB_DIRS += ../libraries/xmem
 LIB_DIRS += ../libraries/USB_Host_Shield_2_0
 LIB_DIRS += ../libraries/generic_storage
+LIB_DIRS += ../libraries/RTClib
 
 # And finally, the part that brings everything together for you.
 include ../Arduino_Makefile_master/_Makefile.master
