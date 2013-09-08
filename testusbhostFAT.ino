@@ -338,10 +338,10 @@ void loop() {
         if (change) {
                 change = false;
                 if (usbon) {
-                        Usb.vbusPower(VBUS_t(on));
+                        Usb.vbusPower(vbus_on);
                         printf_P(PSTR("VBUS on\r\n"));
                 } else {
-                        Usb.vbusPower(VBUS_t(off));
+                        Usb.vbusPower(vbus_off);
                         usbon_time = millis() + 2000;
                 }
         }
