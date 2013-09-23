@@ -408,9 +408,9 @@ void loop() {
                                                                         printf_P(PSTR("Partition %u type %#02x\r\n"), j, parts[cpart].type);
                                                                         // for now
                                                                         if (isfat(parts[cpart].type)) {
-                                                                                Fats[cpart] = new PFAT;
-                                                                                int r = Fats[cpart]->Init(&sto[i], cpart, parts[cpart].firstSector);
-                                                                                if (r) {
+                                                                                Fats[cpart] = new PFAT(&sto[i], cpart, parts[cpart].firstSector);
+                                                                                //int r = Fats[cpart]->Good();
+                                                                                if (Fats[cpart]->Good()) {
                                                                                         delete Fats[cpart];
                                                                                         Fats[cpart] = NULL;
                                                                                 } else cpart++;
@@ -419,10 +419,10 @@ void loop() {
                                                         }
                                                 } else {
                                                         // try superblock
-                                                        Fats[cpart] = new PFAT;
-                                                        int r = Fats[cpart]->Init(&sto[i], cpart, 0);
-                                                        if (r) {
-                                                                printf_P(PSTR("Superblock error %x\r\n"), r);
+                                                        Fats[cpart] = new PFAT(&sto[i], cpart, 0);
+                                                        //int r = Fats[cpart]->Good();
+                                                        if (Fats[cpart]->Good()) {
+                                                                //printf_P(PSTR("Superblock error %x\r\n"), r);
                                                                 delete Fats[cpart];
                                                                 Fats[cpart] = NULL;
                                                         } else cpart++;
