@@ -49,20 +49,14 @@
 /////////////////////////////////////////////////////////////
 
 #include <xmem.h>
-#include <max3421e.h>
-#include <usbhost.h>
-#include <usb_ch9.h>
-#include <Usb.h>
 #if WANT_HUB_TEST
 #include <usbhub.h>
+#else
+#include <Usb.h>
 #endif
-#include <avrpins.h>
-#include <avr/pgmspace.h>
-#include <address.h>
 #include <masstorage.h>
 #include <Storage.h>
 #include <PCpartition/PCPartition.h>
-#include <message.h>
 #include <avr/interrupt.h>
 #include <FAT/FAT.h>
 #include <Wire.h>
