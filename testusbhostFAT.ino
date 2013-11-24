@@ -49,6 +49,8 @@
 /////////////////////////////////////////////////////////////
 #if defined(AVR)
 #include <xmem.h>
+#else
+#include <spi4teensy3.h>
 #endif
 #if WANT_HUB_TEST
 #include <usbhub.h>
@@ -60,7 +62,7 @@
 #include <FAT/FAT.h>
 #include <Wire.h>
 #include <RTClib.h>
-
+#include <stdio.h>
 #if defined(AVR)
 static FILE tty_stdio;
 static FILE tty_stderr;
@@ -113,6 +115,11 @@ static int tty_stderr_putc(char c, FILE *t) {
         return 0;
 }
 
+static int tty_stderr_flush(FILE *t) {
+        USB_HOST_SERIAL.flush();
+        return 0;
+}
+
 static int tty_std_putc(char c, FILE *t) {
         Serial.write(c);
         return 0;
@@ -122,40 +129,47 @@ static int tty_std_getc(FILE *t) {
         while (!Serial.available());
         return Serial.read();
 }
+
+static int tty_std_flush(FILE *t) {
+        Serial.flush();
+        return 0;
+}
+
 #else
 extern "C" {
-        
-int _write(int fd, const char *ptr, int len) {
-       int j;
-       for (j = 0; j < len; j++) {
-               if(fd ==1)
-                                Serial.write(*ptr++);
-                                else if(fd ==2)
-                                USB_HOST_SERIAL.write(*ptr++);
-        }
-        return len;
-}
 
-int _read(int fd, char *ptr, int len) {
-        if(len > 0 && fd ==0) {
-        while (!Serial.available());
-        *ptr = Serial.read();
-        return 1;
+        int _write(int fd, const char *ptr, int len) {
+                int j;
+                for (j = 0; j < len; j++) {
+                        if (fd == 1)
+                                Serial.write(*ptr++);
+                        else if (fd == 2)
+                                USB_HOST_SERIAL.write(*ptr++);
+                }
+                return len;
         }
-        return 0;
-}
+
+        int _read(int fd, char *ptr, int len) {
+                if (len > 0 && fd == 0) {
+                        while (!Serial.available());
+                        *ptr = Serial.read();
+                        return 1;
+                }
+                return 0;
+        }
 
 #include <sys/stat.h>
-int _fstat(int fd, struct stat *st) {
-        memset (st, 0, sizeof(*st));
-        st->st_mode = S_IFCHR;
-        st->st_blksize = 1024;
-        return 0;
-}
 
-int _isatty(int fd) {
-        return (fd < 3) ? 1 : 0;
-}
+        int _fstat(int fd, struct stat *st) {
+                memset(st, 0, sizeof (*st));
+                st->st_mode = S_IFCHR;
+                st->st_blksize = 1024;
+                return 0;
+        }
+
+        int _isatty(int fd) {
+                return (fd < 3) ? 1 : 0;
+        }
 }
 #endif
 
@@ -206,8 +220,7 @@ void setup() {
         analogWrite(LED_BUILTIN, 0);
         delay(500);
 #else
-        
-        delay(2000);
+        while (!Serial);
 #endif
 
         printf_P(PSTR("\r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStart\r\n"));
@@ -287,6 +300,30 @@ void setup() {
         sei();
 
         HEAPnext_time = millis() + 10000;
+#else
+#if 0
+        //
+        // On the teensy 3 we can raise the speed of SPI here.
+        //
+        // Default seen is 0xB8011001.
+        //
+
+        uint32_t ctar = SPI0_CTAR0;
+        //printf("SPI_CTAR0 = %8.8X\r\n", ctar);
+        ctar &= 0x7FFCFFF0; // 1/4 fSYS, 12.5Mhz
+        //printf("SPI_CTAR0 = %8.8X\r\n", ctar);
+        ctar |= 0x80000000; // 1/2 fSYS 25Mhz
+        //printf("SPI_CTAR0 = %8.8X\r\n", ctar);
+
+        uint32_t mcr = SPI0_MCR;
+        if (mcr & SPI_MCR_MDIS) {
+                SPI0_CTAR0 = ctar;
+        } else {
+                SPI0_MCR = mcr | SPI_MCR_MDIS | SPI_MCR_HALT;
+                SPI0_CTAR0 = ctar;
+                SPI0_MCR = mcr;
+        }
+#endif
 #endif
 
 }
@@ -375,6 +412,10 @@ void loop() {
                 }
                 HEAPnext_time = millis() + 10000;
         }
+        TCCR3B = 0;
+#else
+        // Arm suffers here, oh well...
+        serialEvent();
 #endif
         // Horrid! This sort of thing really belongs in an ISR, not here!
         // We also will be needing to test each hub port, we don't do this yet!
@@ -649,7 +690,9 @@ out:
                                 rc = f_open(&My_File_Object_x, "0:/10MB.bin", FA_WRITE | FA_CREATE_ALWAYS);
                                 if (rc) goto failed;
                                 for (bw = 0; bw < mbxs; bw++) My_Buff_x[bw] = bw & 0xff;
+                                fflush(stdout);
                                 start = millis();
+                                while (start == millis());
                                 for (ii = 10485760LU / mbxs; ii > 0LU; ii--) {
                                         rc = f_write(&My_File_Object_x, My_Buff_x, mbxs, &bw);
                                         if (rc || !bw) goto failed;
@@ -657,10 +700,12 @@ out:
                                 rc = f_close(&My_File_Object_x);
                                 if (rc) goto failed;
                                 end = millis();
-                                wt = end - start;
+                                wt = (end - start) - 1;
                                 printf_P(PSTR("Time to write 10485760 bytes: %lu ms (%lu sec) \r\n"), wt, (500 + wt) / 1000UL);
                                 rc = f_open(&My_File_Object_x, "0:/10MB.bin", FA_READ);
+                                fflush(stdout);
                                 start = millis();
+                                while (start == millis());
                                 if (rc) goto failed;
                                 for (;;) {
                                         rc = f_read(&My_File_Object_x, My_Buff_x, mbxs, &bw); /* Read a chunk of file */
@@ -670,7 +715,7 @@ out:
                                 if (rc) goto failed;
                                 rc = f_close(&My_File_Object_x);
                                 if (rc) goto failed;
-                                rt = end - start;
+                                rt = (end - start) - 1;
                                 printf_P(PSTR("Time to read 10485760 bytes: %lu ms (%lu sec)\r\nDelete test file\r\n"), rt, (500 + rt) / 1000UL);
 failed:
                                 if (rc) die(rc);
