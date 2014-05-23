@@ -355,7 +355,7 @@ void serialEvent() {
 // ALL teensy versions LACK PWM ON LED
 
 ISR(TIMER3_COMPA_vect) {
-        if(millis() >= LEDnext_time) {
+        if((long)(millis() - LEDnext_time) >= 0L) {
                 LEDnext_time = millis() + 30;
 
                 // set the brightness of LED
@@ -391,7 +391,7 @@ void loop() {
 
 #if defined(__AVR__)
         // Print a heap status report about every 10 seconds.
-        if(millis() >= HEAPnext_time) {
+        if((long)(millis() - HEAPnext_time) >= 0L) {
                 if(UsbDEBUGlvl > 0x50) {
                         printf_P(PSTR("Available heap: %u Bytes\r\n"), freeHeap());
                 }
@@ -405,7 +405,7 @@ void loop() {
 #endif
         // Horrid! This sort of thing really belongs in an ISR, not here!
         // We also will be needing to test each hub port, we don't do this yet!
-        if(!change && !usbon && millis() >= usbon_time) {
+        if(!change && !usbon && (long)(millis() - usbon_time) >= 0L) {
                 change = true;
                 usbon = true;
         }
@@ -551,8 +551,8 @@ void loop() {
 #endif
                                 notified = true;
                                 FATFS *fs = NULL;
-                                for(int zz=0;zz<_VOLUMES;zz++){
-                                     if(Fats[zz]->volmap == 0) fs = Fats[zz]->ffs;
+                                for(int zz = 0; zz < _VOLUMES; zz++) {
+                                        if(Fats[zz]->volmap == 0) fs = Fats[zz]->ffs;
                                 }
                                 printf_P(PSTR("\r\nOpen an existing file (message.txt).\r\n"));
                                 rc = f_open(&My_File_Object_x, "0:/MESSAGE.TXT", FA_READ);
@@ -674,8 +674,8 @@ out:
                         if(runtest) {
                                 ULONG ii, wt, rt, start, end;
                                 FATFS *fs = NULL;
-                                for(int zz=0;zz<_VOLUMES;zz++){
-                                     if(Fats[zz]->volmap == 0) fs = Fats[zz]->ffs;
+                                for(int zz = 0; zz < _VOLUMES; zz++) {
+                                        if(Fats[zz]->volmap == 0) fs = Fats[zz]->ffs;
                                 }
                                 runtest = false;
                                 f_unlink("0:/10MB.bin");
