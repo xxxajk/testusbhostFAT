@@ -51,11 +51,17 @@
 #define WANT_HUB_TEST 0
 
 
-#if defined(__AVR__)
+#if defined(CORE_TEENSY)
 #include <xmem.h>
-#else
 #include <spi4teensy3.h>
 #endif
+
+#if defined(__AVR__)
+#include <xmem.h>
+#elif defined(ARDUINO_ARCH_SAM)
+#include <SPI.h>
+#endif
+
 #if WANT_HUB_TEST
 #include <usbhub.h>
 #endif
@@ -140,8 +146,10 @@ static int tty_std_flush(FILE *t) {
 }
 
 #else
+// Supposedly the DUE has stdio already pointing to serial...
+#if !defined(ARDUINO_ARCH_SAM)
+// But newlib needs this...
 extern "C" {
-
         int _write(int fd, const char *ptr, int len) {
                 int j;
                 for(j = 0; j < len; j++) {
@@ -175,6 +183,7 @@ extern "C" {
                 return (fd < 3) ? 1 : 0;
         }
 }
+#endif // !defined(ARDUINO_ARCH_SAM)
 #endif
 
 void setup() {
