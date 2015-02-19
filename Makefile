@@ -3,17 +3,20 @@
 # If you lack quadram, or want to disable LFN, just change _FS_TINY=1 _USE_LFN=0
 #
 # If your board is a mega 2560 uncomment the following two lines
-#BOARD = mega2560
-#PROGRAMMER = wiring
+BOARD = mega2560
+PROGRAMMER = wiring
 # ...and then comment out the following two lines
 #BOARD = mega
 #PROGRAMMER = arduino
-
 #BOARD = teensypp2
-BOARD = teensy3
+#BOARD = teensy3
 #BOARD = teensy31
 
+# set your Arduino tty port here
+CPORT = /dev/ttyUSB1
 
+# set your Arduino programming port or URL here
+PORT = /dev/ttyUSB1
 
 
 # this is the default for teensy
@@ -42,9 +45,6 @@ BOARD = teensy3
 #LAYOUT_UNITED_KINGDOM
 #LAYOUT_US_INTERNATIONAL
 
-# set your Arduino tty port here
-PORT = /dev/ttyACM0
-
 EXTRA_FLAGS = -D _USE_LFN=3
 
 # change to 0 if you have quadram to take advantage of caching FAT
@@ -61,7 +61,6 @@ ifneq "$(BOARD)" "teensy31"
 ifneq "$(BOARD)" "teensy3"
 EXTRA_FLAGS += -D EXT_RAM_STACK=1
 EXTRA_FLAGS += -D EXT_RAM_HEAP=1
-EXTRA_FLAGS += -D USE_MULTIPLE_APP_API=16
 endif
 endif
 

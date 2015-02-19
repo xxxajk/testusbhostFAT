@@ -43,6 +43,7 @@
               <pElem>../libraries/spi4teensy3</pElem>
               <pElem>../libraries/USB_Host_Shield_2_0</pElem>
               <pElem>../libraries/generic_storage</pElem>
+              <pElem>/opt/Arduino/libraries/SPI</pElem>
             </incDir>
           </cTool>
           <ccTool>
@@ -52,6 +53,7 @@
               <pElem>../libraries/spi4teensy3</pElem>
               <pElem>../libraries/USB_Host_Shield_2.0</pElem>
               <pElem>../libraries/generic_storage</pElem>
+              <pElem>/opt/Arduino/libraries/SPI</pElem>
             </incDir>
           </ccTool>
         </makeTool>
